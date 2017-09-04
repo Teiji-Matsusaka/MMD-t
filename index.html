@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8" />
+	<script src="js/three.js/three.js"></script>
+	<script src="js/three.js/mmdparser.min.js"></script>
+	<script src="js/three.js/MMDLoader.js"></script>
+	<script src="js/three.js/TGALoader.js"></script>
+	<script src="js/three.js/CCDIKSolver.js"></script>
+	<script src="js/three.js/MMDPhysics.js"></script>
+	<script src="js/three.js/ammo.js"></script>
+	<script src="js/three.js/OutlineEffect.js"></script>
+	<script src="js/MMD.js"></script>
+	<script src="js/QuaternionRotateControls.js"></script>
+	<script src="js/main.js"></script>
+</head>
+	<body>
+		<form name="DataSelect">
+			Model:<select id="ModelFile" name="ModelFile" OnChange="LoadModel()">
+				<option value=""></option>
+				<option value="model/miku/miku_v2.pmd">miku_v2</option>
+			</select>
+			Motion:<select id="MotionFile" name="MotionFile" OnChange="LoadMotion()">
+				<option value=""></option>
+				<option value="motion/wavefile_motion/wavefile_v2.vmd">wavefile_v2</option>
+				<option value="motion/wavefile_motion/wavefile_lat.vmd">wavefile_lat</option>
+				<option value="motion/wavefile_motion/wavefile_rea.vmd">wavefile_rea</option>
+			</select><br>
+			Camera Work:<select id="CameraWorkFile" name="CameraWorkFile" OnChange="LoadCameraWork()">
+				<option value=""></option>
+				<option value="motion/wavefile_motion/wavefile_camera.vmd">wavefile_camera</option>
+			</select>
+			Audio:<select id="AudioFile" name="AudioFile" OnChange="LoadAudio()">
+				<option value=""></option>
+				<option value="audio/wavefile/wavefile_short.mp3">wavefile_short.mp3</option>
+			</select>
+		</form>
+		<form name="Command">
+			<input type="button" value="Load" OnClick="load()" />
+			<input type="button" value="Display" OnClick="display()" />
+			<input type="button" value="Play" OnClick="motion()" />
+			<input type="button" value="Stop" OnClick="stopmotion()" />
+			<input type="range" id="slider" value="0" min="0" max="100" step="1" />
+		</form>
+	</body>
+</html>
