@@ -12,15 +12,12 @@ function init() {
 	// 床登録
 	scene.add( new THREE.PolarGridHelper(30, 10) );
 
-	//const mesh = new THREE.Group().add( box, box2 );
-	//scene.add( new THREE.AxisHelper(1000) );
-	//const arrowhelper = new THREE.ArrowHelper( new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 0, 0), 100, 0xffff00 );
-	//scene.add( arrowhelper );
-
 	// ライトを作る
-	const light = new THREE.AmbientLight( 0xffffff );
-	//light.position.set( 0, 0, 1 );
-	scene.add( light );	// シーンに追加
+	const alight = new THREE.AmbientLight( 0x666666 );
+	scene.add( alight );
+	var dlight = new THREE.DirectionalLight( 0x887766 );
+	dlight.position.set( -1, 1, 1 ).normalize();
+	scene.add( dlight );
 
 	// 背景色変更
 	renderer.setClearColor( 0x888888 );
@@ -55,7 +52,7 @@ function LoadModel() {
 
 function LoadMotion() {
 	var MotionFileName = document.getElementById( 'MotionFile' ).value;
-	//mmd.helper.setPhysicsParams( { warmup: 60 } );
+	mmd.helper.setPhysicsParams( { warmup: 60 } );
 	mmd.loader.loadMotion( 0, MotionFileName );
 }
 

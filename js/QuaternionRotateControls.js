@@ -156,11 +156,7 @@ QuaternionRotateControls = function ( scene, camera, domElement ) {
 	}
 
 	function cameraCtrlReset() {
-		if( ! scope.camera ) return;
-		scope.camera.position.copy( scope.eye );
-		scope.camera.center.copy( scope.look );
-		scope.camera.up.copy( scope.up );
-		scope.camera.lookAt( scope.look );
+		if( scope.camera ) scope.setView( scope.eye, scope.look, scope.up );
 	}
 
 	function objectCtrlReset() {

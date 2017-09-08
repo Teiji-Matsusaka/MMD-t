@@ -171,7 +171,7 @@ MMD.Loader.prototype.loadModel = function( no, url, callback, onProgress, onErro
 	var model = undefined;
 	var mesh = undefined;
 	this.loadedModel = undefined;
-	var xhr = this.loadFile( url, onLoad, onLoadEnd, onProgress, onError, 'arraybuffer' );
+	this.loadFile( url, onLoad, onLoadEnd, onProgress, onError, 'arraybuffer' );
 
 	function onLoad( buffer ) {
 		var magic = scope.getFileMagic( buffer ).substr( 0, 3 );
@@ -216,7 +216,8 @@ MMD.Loader.prototype.loadMotion = function( no, url, callback, onProgress, onErr
 
 	function onLoadEnd( e ) {
 		loader.createAnimation( mesh, motion );
-		helper.initAnimation( mesh );
+		helper.setAnimation( mesh );
+		helper.setPhysics( mesh );
 		scope.loadedMotion = true;
 
 		var duration = 0;
@@ -381,7 +382,7 @@ MMD.AnimationHelper.prototype.setController = function( slider ) {
 	}
 };
 
-MMD.AnimationHelper.prototype.initAnimation = function( mesh ) {
+MMD.AnimationHelper.prototype.setAnimation = function( mesh ) {
 	if( mesh.geometry.animations ) {
 		mesh.mixer = new THREE.AnimationMixer( mesh );
 
@@ -409,8 +410,6 @@ MMD.AnimationHelper.prototype.initAnimation = function( mesh ) {
 			if( this.doGrant && mesh.geometry.grants ) mesh.grantSolver = new THREE.MMDGrantSolver( mesh );
 		}
 	}
-
-	if( this.doPhysics ) this.setPhysics( mesh );
 };
 
 MMD.AnimationHelper.prototype.setCameraWork = function( camera ) {
@@ -577,6 +576,7 @@ MMD.AnimationHelper.prototype.cameraUpdate = function( delta, camera ) {
 };
 
 MMD.AnimationHelper.prototype.setPhysics = function( mesh ) {
+	if( ! this.doPhysics ) return;
 	this.physicsParams = this.physicsParams ? Object.assign( {}, this.physicsParams ) : {};
 	if( this.physicsParams.world === undefined && this.doPhysics == 2 ) {
 		var masterPhysics = this.getMasterPhysics();
@@ -593,23 +593,7 @@ MMD.AnimationHelper.prototype.setPhysics = function( mesh ) {
 
 	physics.warmup( this.physicsParams.warmup );
 
-	var iks = mesh.geometry.iks;
-	var bones = mesh.geometry.bones;
-	for( var i in iks ) {
-		var ik = iks[i];
-		var links = ik.links;
-
-		for( var j in links ) {
-			var link = links[j];
-			if( this.doPhysics ) {
-				// disable IK of the bone the corresponding rigidBody type of which is 1 or 2
-				// because its rotation will be overriden by physics
-				link.enabled = bones[link.index].rigidBodyType > 0 ? false : true;
-			} else {
-				link.enabled = true;
-			}
-		}
-	}
+	this.updateIKParametersDependingOnPhysicsEnabled( mesh, true );
 
 	mesh.physics = physics;
 };
@@ -626,6 +610,26 @@ MMD.AnimationHelper.prototype.getMasterPhysics = function() {
 	}
 
 	return null;
+};
+
+MMD.AnimationHelper.prototype.updateIKParametersDependingOnPhysicsEnabled = function( mesh, physicsEnabled ) {
+	var iks = mesh.geometry.iks;
+	var bones = mesh.geometry.bones;
+	for( var i in iks ) {
+		var ik = iks[i];
+		var links = ik.links;
+
+		for( var j in links ) {
+			var link = links[j];
+			if( physicsEnabled ) {
+				// disable IK of the bone the corresponding rigidBody type of which is 1 or 2
+				// because its rotation will be overriden by physics
+				link.enabled = bones[link.index].rigidBodyType > 0 ? false : true;
+			} else {
+				link.enabled = true;
+			}
+		}
+	}
 };
 
 MMD.AnimationHelper.prototype.setPhysicsParams = function( p ) {
