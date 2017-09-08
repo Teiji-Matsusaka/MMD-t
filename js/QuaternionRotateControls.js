@@ -8,12 +8,10 @@ QuaternionRotateControls = function ( scene, camera, domElement ) {
 	this.ctrl = CTRL.CAMERA;
 	this.object = undefined;
 
-	this.eyeDef   = new THREE.Vector3().copy( camera.position );
-	this.lookDef  = new THREE.Vector3( 0, 0, 0 );
-	this.upDef    = new THREE.Vector3().copy( camera.up );
-	this.eyePrev  = new THREE.Vector3().copy( camera.position );
-	this.lookPrev = new THREE.Vector3( 0, 0, 0 );
-	this.upPrev   = new THREE.Vector3().copy( camera.up );
+	camera.center = new THREE.Vector3( 0, 0, 0 );	//変数追加
+	this.eye   = new THREE.Vector3().copy( camera.position );
+	this.look  = new THREE.Vector3().copy( camera.center );
+	this.up    = new THREE.Vector3().copy( camera.up );
 
 	var scope = this;
 
@@ -22,8 +20,8 @@ QuaternionRotateControls = function ( scene, camera, domElement ) {
 	var evPositionEnd = new THREE.Vector2();
 
 	// 初期表示
-	scope.camera.lookAt( this.lookPrev );
-	this.setView( this.eyeDef, this.lookDef, this.upDef );
+	scope.camera.lookAt( this.look );
+	this.setView( this.eye, this.look, this.up );
 
 	scope.domElement.addEventListener( 'contextmenu', onContextMenu, false );
 	scope.domElement.addEventListener( 'mousedown', onMouseDown, false );
@@ -60,53 +58,57 @@ QuaternionRotateControls = function ( scene, camera, domElement ) {
 		var ar = Math.sqrt( ax * ax + ay * ay );
 		var element = scope.domElement == document ? scope.domElement.body : scope.domElement;
 		var dr = Math.sqrt( element.clientWidth * element.clientWidth + element.clientHeight * element.clientHeight );
-		var vx = new THREE.Vector3( 1, 0, 0 ).applyQuaternion( scope.camera.quaternion ).normalize();
-		var vy = new THREE.Vector3( 0, 1, 0 ).applyQuaternion( scope.camera.quaternion ).normalize();
-		var vz = new THREE.Vector3( 0, 0, 1 ).applyQuaternion( scope.camera.quaternion ).normalize();
+		var ex = new THREE.Vector3( 1, 0, 0 ).applyQuaternion( scope.camera.quaternion ).normalize();
+		var ey = new THREE.Vector3( 0, 1, 0 ).applyQuaternion( scope.camera.quaternion ).normalize();
+		var ez = new THREE.Vector3( 0, 0, 1 ).applyQuaternion( scope.camera.quaternion ).normalize();
 
 		if( state == STAT.ROTATE && scope.ctrl == CTRL.CAMERA ) {
-			var tmp  = new THREE.Vector3().copy( scope.eyePrev ).sub( scope.lookPrev );
-			var eye  = new THREE.Vector3( 0, 0, tmp.length() );
-			var look = new THREE.Vector3().copy( scope.lookPrev );
-			var up   = new THREE.Vector3().copy( scope.upPrev );
+			var eye  = new THREE.Vector3().copy( scope.camera.position );
+			var look = new THREE.Vector3().copy( scope.camera.center );
+			var up   = new THREE.Vector3().copy( scope.camera.up );
 			var axis = new THREE.Vector3( -ay, ax, 0 ).normalize();
 			var angle = Math.PI * ar / dr;
 			var q = new THREE.Quaternion().setFromAxisAngle( axis, angle );
-			//eye.sub( look );
+			var qi = new THREE.Quaternion().copy( scope.camera.quaternion ).inverse();
+			eye.sub( look );
+			eye.applyQuaternion( qi );
 			eye.applyQuaternion( q );
 			eye.applyQuaternion( scope.camera.quaternion );
 			eye.add( look );
+			up.applyQuaternion( qi );
+			up.applyQuaternion( q );
+			up.applyQuaternion( scope.camera.quaternion ).normalize();
 			scope.setView( eye, look, up );
 		}
 
 		if( state == STAT.PAN && scope.ctrl == CTRL.CAMERA ) {
-			var eye  = new THREE.Vector3().copy( scope.eyePrev );
-			var look = new THREE.Vector3().copy( scope.lookPrev );
-			var up   = new THREE.Vector3().copy( scope.upPrev );
-			var ve = new THREE.Vector3().copy( eye ).sub( look ).normalize();
+			var eye  = new THREE.Vector3().copy( scope.camera.position );
+			var look = new THREE.Vector3().copy( scope.camera.center );
+			var up   = new THREE.Vector3().copy( scope.camera.up );
+			var v = new THREE.Vector3().copy( eye ).sub( look ).normalize();
 			var angle = Math.PI * ax / dr;
-			var q = new THREE.Quaternion().setFromAxisAngle( ve, angle );
+			var q = new THREE.Quaternion().setFromAxisAngle( v, angle );
 			up.applyQuaternion( q );
 			scope.setView( eye, look, up );
 		}
 
 		if( state == STAT.MOVE && scope.ctrl == CTRL.CAMERA ) {
-			var eye  = new THREE.Vector3().copy( scope.eyePrev );
-			var look = new THREE.Vector3().copy( scope.lookPrev );
-			var up   = new THREE.Vector3().copy( scope.upPrev );
-			vx.multiplyScalar( ax );
-			vy.multiplyScalar( ay );
-			eye.add( vx ).add( vy );
-			look.add( vx ).add( vy );
+			var eye  = new THREE.Vector3().copy( scope.camera.position );
+			var look = new THREE.Vector3().copy( scope.camera.center );
+			var up   = new THREE.Vector3().copy( scope.camera.up );
+			ex.multiplyScalar( ax );
+			ey.multiplyScalar( ay );
+			eye.add( ex ).add( ey );
+			look.add( ex ).add( ey );
 			scope.setView( eye, look, up );
 		}
 
 		if( state == STAT.ROTATE && scope.ctrl == CTRL.OBJECT ) {
-			vx.multiplyScalar( ax );
-			vy.multiplyScalar( ay );
+			ex.multiplyScalar( ax );
+			ey.multiplyScalar( ay );
 			var q = new THREE.Quaternion();
-			q.setFromAxisAngle( vz, Math.PI/2 );
-			var axis = new THREE.Vector3().copy( vx ).add( vy );
+			q.setFromAxisAngle( ez, Math.PI/2 );
+			var axis = new THREE.Vector3().copy( ex ).add( ey );
 			axis.applyQuaternion( q ).normalize();
 			var angle = Math.PI * ar / dr;
 			q.setFromAxisAngle( axis, angle );
@@ -115,9 +117,9 @@ QuaternionRotateControls = function ( scene, camera, domElement ) {
 		}
 
 		if( state == STAT.MOVE && scope.ctrl == CTRL.OBJECT ) {
-			vx.multiplyScalar( ax );
-			vy.multiplyScalar( ay );
-			var mv = new THREE.Vector3().copy( vx ).add( vy );
+			ex.multiplyScalar( ax );
+			ey.multiplyScalar( ay );
+			var mv = new THREE.Vector3().copy( ex ).add( ey );
 			var q = new THREE.Quaternion().copy( scope.object.quaternion ).inverse();
 			mv.applyQuaternion( q );
 			// 移動処理
@@ -141,9 +143,9 @@ QuaternionRotateControls = function ( scene, camera, domElement ) {
 		state = STAT.ZOOM;
 		event.preventDefault();
 		event.stopPropagation();
-		var eye  = new THREE.Vector3().copy( scope.eyePrev );
-		var look = new THREE.Vector3().copy( scope.lookPrev );
-		var up   = new THREE.Vector3().copy( scope.upPrev );
+		var eye  = new THREE.Vector3().copy( scope.camera.position );
+		var look = new THREE.Vector3().copy( scope.camera.center );
+		var up   = new THREE.Vector3().copy( scope.camera.up );
 		eye.sub( look );
 		var dd = new THREE.Vector3().copy( eye ).normalize();
 		dd.multiplyScalar( 10*event.deltaY );
@@ -155,12 +157,10 @@ QuaternionRotateControls = function ( scene, camera, domElement ) {
 
 	function cameraCtrlReset() {
 		if( ! scope.camera ) return;
-		scope.eyePrev.copy( scope.eyeDef );
-		scope.lookPrev.copy( scope.lookDef );
-		scope.upPrev.copy( scope.upDef );
-		scope.camera.position.copy( scope.eyeDef );
-		scope.camera.up.copy( scope.upDef );
-		scope.camera.lookAt( scope.lookDef );
+		scope.camera.position.copy( scope.eye );
+		scope.camera.center.copy( scope.look );
+		scope.camera.up.copy( scope.up );
+		scope.camera.lookAt( scope.look );
 	}
 
 	function objectCtrlReset() {
@@ -173,20 +173,10 @@ QuaternionRotateControls = function ( scene, camera, domElement ) {
 		scope.object.quaternion.set( 0, 0, 0, 1 );
 	}
 
-	function syncCamera() {
-		scope.eyePrev.copy( scope.camera.position );
-		scope.upPrev.copy( scope.camera.up );
-		scope.lookPrev.copy( scope.camera.center );
-		//scope.camera.lookAt( scope.camera.center );
-	}
-
 	function onKeyDown( event ) {
 		if( scope.enableKeys == false ) return;
 		if( event.keyCode == KEYS.CAMERACTRL ) {
-			if( scope.camera ) {
-				scope.ctrl = CTRL.CAMERA;
-				syncCamera();
-			}
+			if( scope.camera ) scope.ctrl = CTRL.CAMERA;
 		} else if( event.keyCode == KEYS.OBJECTCTRL ) {
 			if( scope.object ) scope.ctrl = CTRL.OBJECT;
 		} else if( event.keyCode == KEYS.RESET ) {
@@ -202,48 +192,26 @@ QuaternionRotateControls = function ( scene, camera, domElement ) {
 };
 
 QuaternionRotateControls.prototype = Object.create( THREE.EventDispatcher.prototype );
-//QuaternionRotateControls.prototype.constructor = THREE.OrbitControls;
+QuaternionRotateControls.prototype.constructor = QuaternionRotateControls;
 
 QuaternionRotateControls.prototype.setView = function( eye, look, up ) {
-	if( ! this.camera ) return;
-	var q1 = new THREE.Quaternion();
-	var q2 = new THREE.Quaternion();
-	var p  = new THREE.Vector3().copy( eye ).sub( look );
-	var pp = new THREE.Vector3().copy( this.eyePrev ).sub( this.lookPrev );
-	// カメラ方向
-	q1.setFromUnitVectors( pp.normalize(), p.normalize() );
-	q1.multiply( this.camera.quaternion );
-	this.camera.quaternion.copy( q1 );
-	// upの調整
-	var tmp = new THREE.Vector3( 0, 1, 0 ).applyQuaternion( this.camera.quaternion );
-	// 頭上方向
-	q2.setFromUnitVectors( this.upPrev, up );
-	q2.multiply( this.camera.quaternion );
-	this.camera.quaternion.copy( q2 );
-	// 変数の更新
-	this.camera.position.copy( eye );
-	this.camera.up.copy( tmp );
-	this.eyePrev.copy( eye );
-	this.lookPrev.copy( look );
-	this.upPrev.copy( tmp );
+	if( this.camera ) {
+		this.camera.position.copy( eye );
+		this.camera.center.copy( look );
+		this.camera.up.copy( up );
+		this.camera.lookAt( look );
+	}
 };
 
 QuaternionRotateControls.prototype.initView = function( eye, look, up ) {
-	this.eyeDef.copy( eye );
-	this.lookDef.copy( look );
-	this.upDef.copy( up );
+	this.eye.copy( eye );
+	this.look.copy( look );
+	this.up.copy( up );
 
-	this.eyePrev.copy( eye );
-	this.lookPrev.copy( look );
-	this.upPrev.copy( up );
-
-	this.camera.position.copy( eye );
-	this.camera.up.copy( up );
-	this.camera.quaternion.set( 0, 0, 0, 1 );
-	this.camera.lookAt( look );
+	this.setView( eye, look, up );
 };
 
-QuaternionRotateControls.prototype.raySearchObject = function( x, y, w, h ) {
+QuaternionRotateControls.prototype.raySearchObject = function( x, y ) {
 	var mouse = new THREE.Vector2();
 	mouse.x =  ( x / window.innerWidth  ) * 2 - 1;
 	mouse.y = -( y / window.innerHeight ) * 2 + 1;
@@ -251,14 +219,12 @@ QuaternionRotateControls.prototype.raySearchObject = function( x, y, w, h ) {
 	var ray = new THREE.Raycaster();
 	ray.setFromCamera( mouse, this.camera );
 
-	//ヒエラルキーを持った子要素も対象とする場合は第二引数にtrueを指定する
-	//var objs = ray.intersectObjects( this.scene.children, true );
-	var objs = ray.intersectObjects( this.scene.children );
+	var objects = ray.intersectObjects( this.scene.children );
 
-	// 交差していたらobjsが1以上になる
-	if( objs.length > 0 ) {
-		console.log( 'オブジェクトを選択しました', objs.length, 'mouse:', mouse );
-		return objs[0].object;
+	// 交差していたらobjectsが1以上になる
+	if( objects.length > 0 ) {
+		console.log( 'オブジェクトを選択しました', objects.length, 'mouse:', mouse );
+		return objects[0].object;
 	} else {
 		return undefined;
 	}
